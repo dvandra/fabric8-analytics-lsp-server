@@ -164,18 +164,18 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 range: get_range(this.context.version),
                 message: `${this.context.name.value} - ${this.context.version.value}`,
                 source: 'Dependency Analytics ',
-                code: "Find out more: 'Red Hat'&'Snyk' Registration"
+                code: "Find out more: 'Snyk-pkg URL'"
             };
 
             if (this.item.public_vulnerabilities_count == 0 && this.item.private_vulnerabilities_count > 0) {
-                diagnostic.message += ` has ${this.item.private_vulnerabilities_count} security advisory by Snyk.`;
+                diagnostic.message += ` has ${this.item.private_vulnerabilities_count} security advisory by Snyk`;
             } else {
                 diagnostic.message += ` has ${this.item.public_vulnerabilities_count} known security vulnerability`;
                 if (this.item.private_vulnerabilities_count > 0) {
-                    diagnostic.message += ` and ${this.item.private_vulnerabilities_count} security advisory`;
+                    diagnostic.message += ` and ${this.item.private_vulnerabilities_count} security advisory by Snyk`;
                 }
-                diagnostic.message += ` with ${this.item.severity} severity.`
             }
+            diagnostic.message += ` with ${this.item.exploitable_vulnerabilities_count} exploitable vulnerability and ${this.item.severity} severity.`;
 
             // TODO: this can be done lazily
             if (this.changeTo != null) {

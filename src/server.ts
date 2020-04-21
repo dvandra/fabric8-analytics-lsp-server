@@ -263,78 +263,81 @@ const get_metadata = (ecosystem, name, version) => {
 
 let Response = {
     "recommendation": {
-        "component_analyses": {
-          "vulnerability": [
-            {
-              "vendor_cve_ids": "CVE-2010-3082",
-              "cvss": "1.2",
-              "is_private": false
-            },
-            {
-              "vendor_cve_ids": "CVE-2018-1002",
-              "cvss": "1.3",
-              "is_private": false
-            }
-          ]
-        },
-        "recommended_version": "2.3.4",
-        "message": "2 vulnerabilities within this dependency",
-        "severity": "high",
-        "public_vulnerabilities_count": 2,
-        "private_vulnerabilities_count": 1,
-        "registeration_link": "https://app.snyk.io/login"
+      "component_analyses": {
+        "vulnerability": [
+          {
+            "vendor_cve_ids": "CVE-2018-1002",
+            "cvss": "1.2",
+            "is_private": true
+          },
+          {
+            "vendor_cve_ids": "CVE-2010-3082",
+            "cvss": "1.3",
+            "is_private": false
+          }
+        ]
+      },
+      "recommended_version": "4.5.6",
+      "message": "3 vulnerabilities within this dependency, 0 exploitable vulnerabilities",
+      "severity": "high",
+      "public_vulnerabilities_count": 2,
+      "private_vulnerabilities_count": 1,
+      "exploitable_vulnerabilities_count": 3,
+      "vendor_package_link": "https://snyk.io/vuln/maven:org.zeroturnaround%3Azt-zip"
     }
-};
+  }
 
 let Pub_response = {
     "recommendation": {
-        "component_analyses": {
-          "vulnerability": [
-            {
-              "vendor_cve_ids": "CVE-2010-3082",
-              "cvss": "1.2",
-              "is_private": false
-            },
-            {
-              "vendor_cve_ids": "CVE-2018-1002",
-              "cvss": "1.3",
-              "is_private": false
-            }
-          ]
-        },
-        "recommended_version": "2.3.4",
-        "message": "2 vulnerabilities within this dependency",
-        "severity": "medium",
-        "public_vulnerabilities_count": 2,
-        "private_vulnerabilities_count": 0,
-        "registeration_link": "https://app.snyk.io/login"
+      "component_analyses": {
+        "vulnerability": [
+          {
+            "vendor_cve_ids": "CVE-2018-1002",
+            "cvss": "1.2",
+            "is_private": true
+          },
+          {
+            "vendor_cve_ids": "CVE-2010-3082",
+            "cvss": "1.3",
+            "is_private": false
+          }
+        ]
+      },
+      "recommended_version": "4.5.6",
+      "message": "3 vulnerabilities within this dependency, 0 exploitable vulnerabilities",
+      "severity": "high",
+      "public_vulnerabilities_count": 2,
+      "private_vulnerabilities_count": 0,
+      "exploitable_vulnerabilities_count": 1,
+      "vendor_package_link": "https://snyk.io/vuln/maven:org.zeroturnaround%3Azt-zip"
     }
-};
+  }
 
 let Pvt_response = {
     "recommendation": {
-        "component_analyses": {
-          "vulnerability": [
-            {
-              "vendor_cve_ids": "CVE-2010-3082",
-              "cvss": "1.2",
-              "is_private": false
-            },
-            {
-              "vendor_cve_ids": "CVE-2018-1002",
-              "cvss": "1.3",
-              "is_private": false
-            }
-          ]
-        },
-        "recommended_version": null,
-        "message": "2 vulnerabilities within this dependency",
-        "severity": "high",
-        "public_vulnerabilities_count": 0,
-        "private_vulnerabilities_count": 2,
-        "registeration_link": "https://app.snyk.io/login"
+      "component_analyses": {
+        "vulnerability": [
+          {
+            "vendor_cve_ids": "CVE-2018-1002",
+            "cvss": "1.2",
+            "is_private": true
+          },
+          {
+            "vendor_cve_ids": "CVE-2010-3082",
+            "cvss": "1.3",
+            "is_private": false
+          }
+        ]
+      },
+      "recommended_version": "4.5.6",
+      "message": "3 vulnerabilities within this dependency, 0 exploitable vulnerabilities",
+      "severity": "high",
+      "public_vulnerabilities_count": 0,
+      "private_vulnerabilities_count": 1,
+      "exploitable_vulnerabilities_count": 1,
+      "vendor_package_link": "https://snyk.io/vuln/maven:org.zeroturnaround%3Azt-zip"
     }
-};
+  }
 
 let noResponse = {
     "result": {recommendation: {}}
