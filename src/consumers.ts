@@ -5,7 +5,11 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Diagnostic, DiagnosticSeverity, CodeAction } from 'vscode-languageserver'
+import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri } from 'vscode-languageserver'
+
+/* Count total # of Public and Private Vulnerability */
+let Vul_public = 0;
+let Vul_private = 0;
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor
@@ -109,14 +113,13 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
     }
 
     produce(): Diagnostic[] {
-        if (this.item == {} || 
-            this.item.finished_at === undefined ||
-            this.item.finished_at == null) {
+        if (this.item == {} && (this.item.finished_at === undefined ||
+            this.item.finished_at == null)) {
             return [{
                 severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
                 message: `Application dependency ${this.context.name.value}-${this.context.version.value} - analysis is pending`,
-                source: 'Dependency Analytics'
+                source: 'Dependency Analytics '
             }]
         } else {
             return [];
@@ -124,36 +127,62 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
     }   
 }
 
+let targer_link : DocumentUri;
+
 /* Report CVEs in found dependencies */
 class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 {
     constructor(public context: IDependency, config: any) {
         super(config);
-        this.binding = {path: ['result', 'recommendation', 'component-analyses', 'cve']};
+        this.binding = {path: ['recommendation']};
         /* recommendation to use a different version */
-        this.changeToBinding = {path: ['result', 'recommendation', 'change_to']};
+        this.changeToBinding = {path: ['recommendation', 'recommended_version']};
     }
 
     produce(ctx: any): Diagnostic[] {
-        if (this.item.length > 0) {
-            let cveList = [];
-            for (let cve of this.item) {
-                cveList.push(cve['id'])
+        if (this.item != {}) {
+            //let cveList = [];
+            //for (let cve of this.item) {
+              //  cveList.push(cve['id'])
+            //}
+            //let cves = cveList.join(' ');
+
+            Vul_private += this.item.private_vulnerabilities_count;
+            Vul_public += this.item.public_vulnerabilities_count;
+            targer_link = this.item.registeration_link;
+
+            let diag_severity;
+
+            if (this.item.public_vulnerabilities_count == 0 && this.item.private_vulnerabilities_count > 0) {
+                diag_severity = DiagnosticSeverity.Information; 
+            } else {
+                diag_severity = DiagnosticSeverity.Error;
             }
-            let cves = cveList.join(' ');
 
             let diagnostic = {
-                severity: DiagnosticSeverity.Error,
+                severity: diag_severity,
                 range: get_range(this.context.version),
-                message: `Application dependency ${this.context.name.value}-${this.context.version.value} is vulnerable: ${cves}`,
-                source: 'Dependency Analytics'
+                message: `${this.context.name.value} - ${this.context.version.value}`,
+                source: 'Dependency Analytics ',
+                code: "Find out more: 'Red Hat'&'Snyk' Registration"
             };
+
+            if (this.item.public_vulnerabilities_count == 0 && this.item.private_vulnerabilities_count > 0) {
+                diagnostic.message += ` has ${this.item.private_vulnerabilities_count} security advisory by Snyk.`;
+            } else {
+                diagnostic.message += ` has ${this.item.public_vulnerabilities_count} known security vulnerability`;
+                if (this.item.private_vulnerabilities_count > 0) {
+                    diagnostic.message += ` and ${this.item.private_vulnerabilities_count} security advisory`;
+                }
+                diagnostic.message += ` with ${this.item.severity} severity.`
+            }
 
             // TODO: this can be done lazily
             if (this.changeTo != null) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
+                    kind: CodeActionKind.QuickFix,
                     edit: {
                         changes: {
                         }
@@ -163,7 +192,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                     range: diagnostic.range,
                     newText: this.changeTo
                 }];
-                diagnostic.message += ". Recommendation: use version " + this.changeTo;
+                diagnostic.message += ` Recommendation: use version ${this.context.name.value} - ${this.changeTo}.`;
                 codeActionsMap[diagnostic.message] = codeAction
             }
             return [diagnostic]
@@ -175,4 +204,9 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 
 let codeActionsMap = new Map<string, CodeAction>();
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };
+let Set_default = (v1: number, v2: number) => {
+    Vul_private = v1;
+    Vul_public = v2;
+};
+
+export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap, Vul_private, Vul_public, Set_default };
