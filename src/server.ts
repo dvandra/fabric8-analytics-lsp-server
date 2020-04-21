@@ -11,7 +11,7 @@ import {
 } from 'vscode-languageserver';
 import { Stream } from 'stream';
 import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
-import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
+import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap, Vul_private, Vul_public, Set_default } from './consumers';
 
 const url = require('url');
 const https = require('https');
@@ -175,7 +175,7 @@ class AnalysisConfig
 
     constructor() {
         // TODO: this needs to be configurable
-        this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
+        this.server_url = "http://bayesian-api-deepak1725-fabric8-analytics.devtools-dev.ext.devshift.net/api/v2"; //process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
         this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
         this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || "";
         this.forbidden_licenses = [];
@@ -191,18 +191,29 @@ let rc_file = path.join(config.home_dir, '.analysis_rc');
 if (fs.existsSync(rc_file)) {
     let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
     if ('server' in rc) {
-        config.server_url = `${rc.server}/api/v1`;
+        config.server_url = "http://bayesian-api-deepak1725-fabric8-analytics.devtools-dev.ext.devshift.net/api/v2";     //`${rc.server}/api/v1`;
     }
 }
 
 let DiagnosticsEngines = [SecurityEngine];
 
 const getCAmsg = (deps, diagnostics): string => {
+    let msg : string;
     if(diagnostics.length > 0) {
-        return `Scanned ${deps.length} runtime dependencies, flagged ${diagnostics.length} potential security vulnerabilities along with quick fixes`;
+        if (Vul_private > 0 && Vul_public > 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${Vul_public} Known Security Vulnerability and ${Vul_private} Security Advisory along with quick fixes`;
+        } else if (Vul_private == 0 && Vul_public > 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${Vul_public} Known Security Vulnerability along with quick fixes`;
+        } else if (Vul_private > 0 && Vul_public == 0) {
+            msg = `Scanned ${deps.length} runtime dependencies, flagged ${Vul_private} Security Advisory`;
+        } else {
+            msg = `Scanned ${deps.length} runtime dependencies. flagged ${Vul_public} Known Security Vulnerability and ${Vul_private} Security Advisory along with quick fixes`;
+        }
     } else {
-        return `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
+        msg = `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
     }
+    Set_default(0, 0);
+    return msg
 };
 
 const caDefaultMsg = 'Checking for security vulnerabilities ...';
@@ -220,13 +231,13 @@ const get_metadata = (ecosystem, name, version) => {
             const part = [ecosystem, name, version].map(v => encodeURIComponent(v)).join('/');
             const options = {};
                 options['url'] = config.server_url;
-                if(config.three_scale_user_token){
-                    options['url'] += `/component-analyses/${part}?user_key=${config.three_scale_user_token}`;
-                } else{
-                    options['url'] += `/component-analyses/${part}/`;
-                }
+                //if(config.three_scale_user_token){
+                  //  options['url'] += `/component-analyses/${part}?user_key=`;
+                //} else{
+                    options['url'] += `/component-analyses/${part}`;
+               // }
                 options['headers'] = {
-                    'Authorization' : 'Bearer ' + config.api_token,
+                    'x-3scale-account-secret': "",
                 };
             logger.debug('get ' + options['url']);
             connection.console.log('Scanning ' + part);
@@ -260,6 +271,7 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
             connection.sendNotification('caNotification', {'data': getCAmsg(deps, diagnostics), 'diagCount' : diagnostics.length > 0? diagnostics.length : 0});
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
+        
         for (let dependency of deps) {
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {
                 get_metadata(ecosystem, dependency.name.value, dependency.version.value).then((response) => {

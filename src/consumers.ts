@@ -5,7 +5,11 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Diagnostic, DiagnosticSeverity, CodeAction } from 'vscode-languageserver'
+import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri } from 'vscode-languageserver'
+
+/* Count total # of Public and Private Vulnerability */
+let Vul_public = 0;
+let Vul_private = 0;
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor
@@ -85,8 +89,16 @@ class AnalysisConsumer implements IConsumer
 {
     binding: IBindingDescriptor;
     changeToBinding: IBindingDescriptor;
+    regLinkBinding : IBindingDescriptor;
+    messageBinding : IBindingDescriptor;
+    pubVulBinding : IBindingDescriptor;
+    pvtVulBinding : IBindingDescriptor;
     item: any;
     changeTo: string = null;
+    regLink: string = null;
+    message: string = null;
+    pubVul: number = 0;
+    pvtVul: number = 0;
     constructor(public config: any){}
     consume(data: any): boolean {
         if (this.binding != null) {
@@ -96,6 +108,18 @@ class AnalysisConsumer implements IConsumer
         }
         if (this.changeToBinding != null) {
             this.changeTo = bind_object(data, this.changeToBinding);
+        }
+        if (this.regLinkBinding != null) {
+            this.regLink = bind_object(data, this.regLinkBinding);
+        }
+        if (this.messageBinding != null) {
+            this.message = bind_object(data, this.messageBinding);
+        }
+        if (this.pubVulBinding != null) {
+            this.pubVul = bind_object(data, this.pubVulBinding);
+        }
+        if (this.pvtVulBinding != null) {
+            this.pvtVul = bind_object(data, this.pvtVulBinding);
         }
         return this.item != null;
     }
@@ -109,14 +133,13 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
     }
 
     produce(): Diagnostic[] {
-        if (this.item == {} || 
-            this.item.finished_at === undefined ||
-            this.item.finished_at == null) {
+        if (this.item == {} && (this.item.finished_at === undefined ||
+            this.item.finished_at == null)) {
             return [{
                 severity: DiagnosticSeverity.Information,
                 range: get_range(this.context.version),
                 message: `Application dependency ${this.context.name.value}-${this.context.version.value} - analysis is pending`,
-                source: 'Dependency Analytics'
+                source: 'Dependency Analytics '
             }]
         } else {
             return [];
@@ -124,36 +147,50 @@ class EmptyResultEngine extends AnalysisConsumer implements DiagnosticProducer
     }   
 }
 
+let targer_link : DocumentUri;
+
 /* Report CVEs in found dependencies */
 class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 {
     constructor(public context: IDependency, config: any) {
         super(config);
-        this.binding = {path: ['result', 'recommendation', 'component-analyses', 'cve']};
+        this.binding = {path: ['component_analyses', 'vulnerability']};
         /* recommendation to use a different version */
-        this.changeToBinding = {path: ['result', 'recommendation', 'change_to']};
+        this.changeToBinding = {path: ['recommended_versions']};
+        this.regLinkBinding = {path: ['registration_link']};
+        this.messageBinding = {path: ['message']};
+        this.pubVulBinding = {path: ['known_security_vulnerability_count']};
+        this.pvtVulBinding = {path: ['security_advisory_count']};
     }
 
     produce(ctx: any): Diagnostic[] {
         if (this.item.length > 0) {
-            let cveList = [];
-            for (let cve of this.item) {
-                cveList.push(cve['id'])
+            Vul_private += this.pvtVul;
+            Vul_public += this.pubVul;
+            targer_link = this.regLink;
+
+            let diag_severity;
+
+            if (this.pubVul == 0 && this.pvtVul > 0) {
+                diag_severity = DiagnosticSeverity.Information; 
+            } else {
+                diag_severity = DiagnosticSeverity.Error;
             }
-            let cves = cveList.join(' ');
 
             let diagnostic = {
-                severity: DiagnosticSeverity.Error,
+                severity: diag_severity,
                 range: get_range(this.context.version),
-                message: `Application dependency ${this.context.name.value}-${this.context.version.value} is vulnerable: ${cves}`,
-                source: 'Dependency Analytics'
+                message: `${this.message}`,
+                source: 'Dependency Analytics ',
+                code: `Find out more: ${targer_link}` 
             };
 
             // TODO: this can be done lazily
-            if (this.changeTo != null) {
+            if (this.changeTo != null && this.pubVul > 0) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
+                    kind: CodeActionKind.QuickFix,
                     edit: {
                         changes: {
                         }
@@ -163,7 +200,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                     range: diagnostic.range,
                     newText: this.changeTo
                 }];
-                diagnostic.message += ". Recommendation: use version " + this.changeTo;
                 codeActionsMap[diagnostic.message] = codeAction
             }
             return [diagnostic]
@@ -175,4 +211,9 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 
 let codeActionsMap = new Map<string, CodeAction>();
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };
+let Set_default = (v1: number, v2: number) => {
+    Vul_private = v1;
+    Vul_public = v2;
+};
+
+export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap, Vul_private, Vul_public, Set_default };
