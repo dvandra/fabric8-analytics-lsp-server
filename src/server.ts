@@ -237,7 +237,7 @@ const get_metadata = (ecosystem, name, version) => {
                     options['url'] += `/component-analyses/${part}`;
                // }
                 options['headers'] = {
-                    'x-3scale-account-secret': "",
+                    'x-3scale-account-secret': "deepsharji",
                 };
             logger.debug('get ' + options['url']);
             connection.console.log('Scanning ' + part);
