@@ -175,7 +175,7 @@ class AnalysisConfig
 
     constructor() {
         // TODO: this needs to be configurable
-        this.server_url = "http://bayesian-api-deepak1725-fabric8-analytics.devtools-dev.ext.devshift.net/api/v2"; //process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
+        this.server_url = "https://f8a-analytics-preview-2445582058137.staging.gw.apicast.io/api/v2"; //process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
         this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
         this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || "";
         this.forbidden_licenses = [];
@@ -191,7 +191,7 @@ let rc_file = path.join(config.home_dir, '.analysis_rc');
 if (fs.existsSync(rc_file)) {
     let rc = JSON.parse(fs.readFileSync(rc_file, 'utf8'));
     if ('server' in rc) {
-        config.server_url = "http://bayesian-api-deepak1725-fabric8-analytics.devtools-dev.ext.devshift.net/api/v2";     //`${rc.server}/api/v1`;
+        config.server_url = "https://f8a-analytics-preview-2445582058137.staging.gw.apicast.io/api/v2";   //http://bayesian-api-deepak1725-fabric8-analytics.devtools-dev.ext.devshift.net/api/v2";     //`${rc.server}/api/v1`;
     }
 }
 
@@ -234,11 +234,11 @@ const get_metadata = (ecosystem, name, version) => {
                 //if(config.three_scale_user_token){
                   //  options['url'] += `/component-analyses/${part}?user_key=`;
                 //} else{
-                    options['url'] += `/component-analyses/${part}`;
+                    options['url'] += `/component-analyses/${part}?user_key=3e42fa66f65124e6b1266a23431e3d08`;
                // }
-                options['headers'] = {
-                    'x-3scale-account-secret': "deepsharji",
-                };
+                //options['headers'] = {
+                  //  'x-3scale-account-secret': "deepsharji",
+                //};
             logger.debug('get ' + options['url']);
             connection.console.log('Scanning ' + part);
             if(process.env.RECOMMENDER_API_URL){
