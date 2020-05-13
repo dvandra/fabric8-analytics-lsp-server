@@ -5,7 +5,8 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri } from 'vscode-languageserver'
+import { DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri } from 'vscode-languageserver';
+import { Diagnostic } from 'vscode-languageserver-types'
 
 /* Count total # of Public and Private Vulnerability */
 let Vul_public = 0;
@@ -182,7 +183,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 range: get_range(this.context.version),
                 message: `${this.message}`,
                 source: 'Dependency Analytics ',
-                code: `Find out more: ${targer_link}` 
+                code: {value: "Find out more:", targer: targer_link}
             };
 
             // TODO: this can be done lazily
