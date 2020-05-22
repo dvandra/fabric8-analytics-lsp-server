@@ -5,8 +5,7 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri } from 'vscode-languageserver';
-import { Diagnostic } from 'vscode-languageserver-types'
+import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri, DiagnosticCode } from 'vscode-languageserver';
 
 /* Count total # of Public and Private Vulnerability */
 let Vul_public = 0;
@@ -171,6 +170,9 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
             targer_link = this.regLink;
 
             let diag_severity;
+            let diag_code: DiagnosticCode;
+            diag_code.value = "Find out more";
+            diag_code.target = targer_link;
 
             if (this.pubVul == 0 && this.pvtVul > 0) {
                 diag_severity = DiagnosticSeverity.Information; 
@@ -183,7 +185,7 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 range: get_range(this.context.version),
                 message: `${this.message}`,
                 source: 'Dependency Analytics ',
-                code: {value: "Find out more:", targer: targer_link}
+                code: diag_code
             };
 
             // TODO: this can be done lazily

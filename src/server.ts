@@ -6,12 +6,16 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import {
-	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
+	IPCMessageReader, IPCMessageWriter, createConnection, IConnection, TextDocumentSyncKind, TextDocumentsConfiguration,
 	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
 } from 'vscode-languageserver';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 import { Stream } from 'stream';
 import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
 import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap, Vul_private, Vul_public, Set_default } from './consumers';
+import { ConfigurationFeature } from 'vscode-languageserver/lib/configuration';
 
 const url = require('url');
 const https = require('https');
@@ -44,7 +48,8 @@ if (process.argv.indexOf('--stdio') == -1)
 else
     connection = createConnection()
 
-let documents: TextDocuments = new TextDocuments();
+//let textDocConfig: TextDocumentsConfiguration<EventStream>;    
+let documents = new TextDocuments(TextDocument);
 documents.listen(connection);
 
 let workspaceRoot: string;
@@ -52,7 +57,7 @@ connection.onInitialize((params): InitializeResult => {
     workspaceRoot = params.rootPath;
     return {
         capabilities: {
-            textDocumentSync: documents.syncKind,
+            textDocumentSync: TextDocumentSyncKind.Full,
             codeActionProvider: true
         }
     }
