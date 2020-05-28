@@ -198,19 +198,16 @@ if (fs.existsSync(rc_file)) {
 let DiagnosticsEngines = [SecurityEngine];
 
 const getCAmsg = (deps, diagnostics, totalCount): string => {
-    let msg : string;
+    let msg = (deps.length == 1) ? `Scanned ${deps.length} runtime dependency, ` : `Scanned ${deps.length} runtime dependencies, `;
     if(diagnostics.length > 0) {
-        if (totalCount.advisoryCount > 0 && totalCount.vulnerabilityCount > 0) {
-            msg = `Scanned ${deps.length} runtime dependencies, flagged ${totalCount.vulnerabilityCount} Known Security Vulnerability and ${totalCount.advisoryCount} Security Advisory along with quick fixes`;
-        } else if (totalCount.advisoryCount == 0 && totalCount.vulnerabilityCount > 0) {
-            msg = `Scanned ${deps.length} runtime dependencies, flagged ${totalCount.vulnerabilityCount} Known Security Vulnerability along with quick fixes`;
-        } else if (totalCount.advisoryCount > 0 && totalCount.vulnerabilityCount == 0) {
-            msg = `Scanned ${deps.length} runtime dependencies, flagged ${totalCount.advisoryCount} Security Advisory`;
-        } else {
-            msg = `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
-        }
+        let vulnerability = (totalCount.vulnerabilityCount == 0) ?  null : 
+            (`${totalCount.vulnerabilityCount} Known Security` + ((totalCount.vulnerabilityCount == 1) ? " Vulnerability" : " Vulnerabilities" ));
+        let advisory = (totalCount.advisoryCount == 0) ?  null : (`${totalCount.advisoryCount} Security` + 
+            ((totalCount.advisoryCount == 1) ? " Advisory" : " Advisories" ));
+        msg += (!vulnerability) ? ((!advisory) ? "No potential security vulnerabilities found" : ("flagged " + advisory)) : 
+            (("flagged " + vulnerability) + ((advisory) ? " and " + advisory : "" ) + (" along with quick fixes"));
     } else {
-        msg = `Scanned ${deps.length} runtime dependencies. No potential security vulnerabilities found`;
+        msg += `No potential security vulnerabilities found`;
     }
     return msg
 };
@@ -259,6 +256,12 @@ const get_metadata = (ecosystem, name, version) => {
         }
     });
 };
+/* Total Counts of #Known Security Vulnerability and #Security Advisory */
+class TotalCount 
+{
+    vulnerabilityCount: number = 0;
+    advisoryCount: number = 0;
+};
 
 const regexVersion =  new RegExp(/^([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+\.)?([a-zA-Z0-9]+)$/);
 const sendDiagnostics = (ecosystem: string, uri: string, contents: string, collector: IDependencyCollector) => {
@@ -271,10 +274,7 @@ const sendDiagnostics = (ecosystem: string, uri: string, contents: string, colle
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         
-        let totalCount = {
-            vulnerabilityCount : 0,
-            advisoryCount : 0
-        }
+        let totalCount = new TotalCount();
 
         for (let dependency of deps) {
             if(dependency.name.value && dependency.version.value && regexVersion.test(dependency.version.value.trim())) {

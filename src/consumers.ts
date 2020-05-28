@@ -31,8 +31,8 @@ interface IConsumer
 {
     binding: IBindingDescriptor;
     item: any;
-    vulnerabilityCount: any;
-    advisoryCount: any;
+    vulnerabilityCount: number;
+    advisoryCount: number;
     consume(data: any): boolean;
 };
 
@@ -165,8 +165,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 
     produce(ctx: any): Diagnostic[] {
         if (this.item.length > 0) {
-            /* DocumentUri as a URI object to pass URLs */
-            this.registrationLink as DocumentUri;
             /* The diagnostic's severity. */
             let diagSeverity;
 
