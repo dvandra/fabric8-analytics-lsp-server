@@ -5,7 +5,7 @@
 'use strict';
 import { IDependency } from './collector';
 import { get_range } from './utils';
-import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri } from 'vscode-languageserver'
+import { Diagnostic, DiagnosticSeverity, CodeAction, CodeActionKind, DocumentUri, DiagnosticCode, Hover, MarkupContent, MarkupKind } from 'vscode-languageserver';
 
 /* Descriptor describing what key-path to extract from the document */
 interface IBindingDescriptor
@@ -165,8 +165,15 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 
     produce(ctx: any): Diagnostic[] {
         if (this.item.length > 0) {
+            /* DocumentUri as a URI object to pass URLs */
+            this.registrationLink as DocumentUri;
+            //let terget_link : DocumentUri = this.registrationLink;
             /* The diagnostic's severity. */
             let diagSeverity;
+            /* Diagnostic Code */
+            //let diag_code: DiagnosticCode;
+            //diag_code.value = "Find out more";
+            //diag_code.target = terget_link;
 
             if (this.vulnerabilityCount == 0 && this.advisoryCount > 0) {
                 diagSeverity = DiagnosticSeverity.Information; 
@@ -179,11 +186,11 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 range: get_range(this.context.version),
                 message: `${this.message}`,
                 source: 'Dependency Analytics',
-                code: `Find out more: ${this.registrationLink}` 
+                code: `Find out more: ${this.registrationLink}`
             };
 
             // TODO: this can be done lazily
-            if (this.changeTo != null && this.vulnerabilityCount > 0) {
+            if (this.changeTo && (this.vulnerabilityCount > 0)) {
                 let codeAction: CodeAction = {
                     title: "Switch to recommended version " + this.changeTo,
                     diagnostics: [diagnostic],
@@ -199,6 +206,19 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
                 }];
                 codeActionsMap[diagnostic.message] = codeAction
             }
+
+            if (this.registrationLink) {
+                let contentMarkup: MarkupContent;
+                contentMarkup.kind = MarkupKind.Markdown;
+                contentMarkup.value = `[Find out More: ${this.registrationLink}](${this.registrationLink})`; 
+    
+                let hover: Hover = {
+                    contents: contentMarkup,
+                    range: get_range(this.context.version)
+                };
+                hovers.push(hover)
+            }
+
             return [diagnostic]
         } else {
             return [];
@@ -207,5 +227,6 @@ class SecurityEngine extends AnalysisConsumer implements DiagnosticProducer
 };
 
 let codeActionsMap = new Map<string, CodeAction>();
+let hovers: Hover[];
 
-export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap };
+export { DiagnosticsPipeline, SecurityEngine, EmptyResultEngine, codeActionsMap, hovers };

@@ -6,12 +6,15 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import {
-	IPCMessageReader, IPCMessageWriter, createConnection, IConnection,
-	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams
+	IPCMessageReader, IPCMessageWriter, createConnection, IConnection, TextDocumentSyncKind,
+	TextDocuments, Diagnostic, InitializeResult, CodeLens, CodeAction, RequestHandler, CodeActionParams, Hover
 } from 'vscode-languageserver';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 import { Stream } from 'stream';
 import { DependencyCollector, IDependency, IDependencyCollector, PomXmlDependencyCollector, ReqDependencyCollector } from './collector';
-import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap } from './consumers';
+import { EmptyResultEngine, SecurityEngine, DiagnosticsPipeline, codeActionsMap, hovers } from './consumers';
 
 const url = require('url');
 const https = require('https');
@@ -43,8 +46,8 @@ if (process.argv.indexOf('--stdio') == -1)
     connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 else
     connection = createConnection()
-
-let documents: TextDocuments = new TextDocuments();
+   
+let documents = new TextDocuments(TextDocument);
 documents.listen(connection);
 
 let workspaceRoot: string;
@@ -52,8 +55,9 @@ connection.onInitialize((params): InitializeResult => {
     workspaceRoot = params.rootPath;
     return {
         capabilities: {
-            textDocumentSync: documents.syncKind,
-            codeActionProvider: true
+            textDocumentSync: TextDocumentSyncKind.Incremental,
+            codeActionProvider: true,
+            hoverProvider: true
         }
     }
 });
@@ -341,6 +345,11 @@ connection.onCodeAction((params, token): CodeAction[] => {
     }
     return codeActions;
 });
+
+connection.onHover(Hover => {
+    clearTimeout(checkDelay);
+    return hovers[0];
+})
 
 connection.onDidCloseTextDocument((params) => {
     clearTimeout(checkDelay);
